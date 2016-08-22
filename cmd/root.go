@@ -48,8 +48,9 @@ func init() {
 	RootCmd.PersistentFlags().BoolVarP(&showVersion, "version", "v", false,
 		"Show the version and exit")
 
-	// TODO: Add strict address parsing option
 	// TODO: Add html support
+	RootCmd.PersistentFlags().BoolP("strict-parsing", "e", false,
+		"Fail to send the email when any email address is malformed")
 	RootCmd.PersistentFlags().StringSliceP("to", "t", nil,
 		"Destination addresses")
 	RootCmd.MarkFlagRequired("to")
@@ -79,6 +80,7 @@ func init() {
 
 	viper.SetEnvPrefix("email")
 	viper.AutomaticEnv()
+	viper.BindEnv("strict_parsing")
 	viper.BindEnv("to")
 	viper.BindEnv("from")
 	viper.BindEnv("reply-to")
@@ -92,6 +94,7 @@ func init() {
 	viper.BindEnv("smtp_username")
 	viper.BindEnv("smtp_password")
 
+	viper.BindPFlag("strict-parsing", RootCmd.PersistentFlags().Lookup("strict-parsing"))
 	viper.BindPFlag("email.to", RootCmd.PersistentFlags().Lookup("to"))
 	viper.BindPFlag("email.from", RootCmd.PersistentFlags().Lookup("from"))
 	viper.BindPFlag("email.reply-to", RootCmd.PersistentFlags().Lookup("reply-to"))
@@ -105,6 +108,7 @@ func init() {
 	viper.BindPFlag("smtp.username", RootCmd.PersistentFlags().Lookup("smtp-username"))
 	viper.BindPFlag("smtp.password", RootCmd.PersistentFlags().Lookup("smtp-password"))
 
+	viper.SetDefault("strict-parsing", false)
 	//TODO: Fill this in
 	viper.SetDefault("email.from", "username@hostname")
 	viper.SetDefault("smtp.server", "localhost")
@@ -176,7 +180,7 @@ func getPipedInput() string {
 }
 
 func sendMessage(message string) {
-	strict := true
+	strict := viper.GetBool("strict-parsing")
 	msg := gomail.NewMessage()
 	msg.SetHeader("From", viper.GetString("email.from"))
 	replyAddress, err := formatEmail(viper.GetString("email.reply-to"))
