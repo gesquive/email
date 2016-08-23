@@ -25,7 +25,7 @@ var RootCmd = &cobra.Command{
 	Short: "Send an email from the command line",
 	Long: `Send an email from the command line.
 
-If a flag is tagged with the word \'multi\', multiple versions of the flag are allowed`,
+If a flag is tagged with 'multi', multiple versions of the flag are accepted`,
 	ValidArgs: []string{"MESSAGE"},
 	Run:       run,
 }
@@ -56,8 +56,8 @@ func init() {
 	RootCmd.PersistentFlags().StringSliceP("to", "t", nil,
 		"Destination addresses (multi)")
 	RootCmd.MarkFlagRequired("to")
-	RootCmd.PersistentFlags().StringP("from", "f", getDefaultEmailAddress(),
-		"From address on email")
+	RootCmd.PersistentFlags().StringP("from", "f", "",
+		"From address on email (default $USER@$HOST)")
 	RootCmd.PersistentFlags().StringP("reply-to", "r", "",
 		"Reply to address")
 	RootCmd.PersistentFlags().StringSliceP("cc", "c", nil,
@@ -121,7 +121,6 @@ func init() {
 	viper.BindPFlag("smtp.password", RootCmd.PersistentFlags().Lookup("smtp-password"))
 
 	viper.SetDefault("strict-parsing", false)
-	viper.SetDefault("email.from", getDefaultEmailAddress())
 	viper.SetDefault("smtp.server", "localhost")
 	viper.SetDefault("smtp.port", 25)
 }
@@ -194,6 +193,9 @@ func sendMessage(message string) {
 	strict := viper.GetBool("strict-parsing")
 	msg := gomail.NewMessage()
 	fromAddress := viper.GetString("email.from")
+	if len(fromAddress) == 0 {
+		fromAddress = getDefaultEmailAddress()
+	}
 	cli.Debug("From: %s", fromAddress)
 	msg.SetHeader("From", fromAddress)
 	replyAddress, err := formatEmail(viper.GetString("email.reply-to"))
