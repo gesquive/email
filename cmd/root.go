@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/mail"
 	"os"
+	"os/user"
 
 	cli "github.com/gesquive/cli-log"
 	"github.com/spf13/cobra"
@@ -54,7 +55,7 @@ func init() {
 	RootCmd.PersistentFlags().StringSliceP("to", "t", nil,
 		"Destination addresses")
 	RootCmd.MarkFlagRequired("to")
-	RootCmd.PersistentFlags().StringP("from", "f", "",
+	RootCmd.PersistentFlags().StringP("from", "f", getDefaultEmailAddress(),
 		"From address on email")
 	RootCmd.PersistentFlags().StringP("reply-to", "r", "",
 		"Reply to address")
@@ -109,8 +110,7 @@ func init() {
 	viper.BindPFlag("smtp.password", RootCmd.PersistentFlags().Lookup("smtp-password"))
 
 	viper.SetDefault("strict-parsing", false)
-	//TODO: Fill this in
-	viper.SetDefault("email.from", "username@hostname")
+	viper.SetDefault("email.from", getDefaultEmailAddress())
 	viper.SetDefault("smtp.server", "localhost")
 	viper.SetDefault("smtp.port", 25)
 }
@@ -182,7 +182,9 @@ func getPipedInput() string {
 func sendMessage(message string) {
 	strict := viper.GetBool("strict-parsing")
 	msg := gomail.NewMessage()
-	msg.SetHeader("From", viper.GetString("email.from"))
+	fromAddress := viper.GetString("email.from")
+	cli.Debug("From: %s", fromAddress)
+	msg.SetHeader("From", fromAddress)
 	replyAddress, err := formatEmail(viper.GetString("email.reply-to"))
 	if strict && err != nil {
 		cli.Warn("%v", err)
@@ -278,4 +280,17 @@ func formatEmail(address string) (string, error) {
 		fAddress = email.Address
 	}
 	return fAddress, nil
+}
+
+func getDefaultEmailAddress() string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "localhost"
+	}
+	userinfo, err := user.Current()
+	username := "user"
+	if err == nil {
+		username = userinfo.Username
+	}
+	return fmt.Sprintf("%s@%s", username, hostname)
 }
