@@ -21,9 +21,11 @@ var showVersion bool
 
 // RootCmd is our only command
 var RootCmd = &cobra.Command{
-	Use:       "email [flags] <message>",
-	Short:     "Send an email from the command line",
-	Long:      `Send an email from the command line`,
+	Use:   "email [flags] <message>",
+	Short: "Send an email from the command line",
+	Long: `Send an email from the command line.
+
+If a flag is tagged with the word \'multi\', multiple versions of the flag are allowed`,
 	ValidArgs: []string{"MESSAGE"},
 	Run:       run,
 }
@@ -52,16 +54,16 @@ func init() {
 	RootCmd.PersistentFlags().BoolP("strict-parsing", "e", false,
 		"Fail to send the email when any email address is malformed")
 	RootCmd.PersistentFlags().StringSliceP("to", "t", nil,
-		"Destination addresses")
+		"Destination addresses (multi)")
 	RootCmd.MarkFlagRequired("to")
 	RootCmd.PersistentFlags().StringP("from", "f", getDefaultEmailAddress(),
 		"From address on email")
 	RootCmd.PersistentFlags().StringP("reply-to", "r", "",
 		"Reply to address")
 	RootCmd.PersistentFlags().StringSliceP("cc", "c", nil,
-		"Carbon copy adresses")
+		"Carbon copy adresses (multi)")
 	RootCmd.PersistentFlags().StringSliceP("bcc", "b", nil,
-		"Blind carbon copy addresses")
+		"Blind carbon copy addresses (multi)")
 	RootCmd.PersistentFlags().StringP("subject", "s", "",
 		"Subject of email")
 	RootCmd.PersistentFlags().StringP("message", "m", "",
@@ -69,7 +71,13 @@ func init() {
 	RootCmd.PersistentFlags().StringP("html-message", "H", "",
 		"Alternate HTML content of email")
 	RootCmd.PersistentFlags().StringSliceP("attachment", "a", nil,
-		"File to attach to email")
+		"File to attach to email (multi)")
+	//TODO: remove this workaround
+	//	when https://github.com/spf13/viper/issues/200 is fixed
+	RootCmd.PersistentFlags().Lookup("to").DefValue = ""
+	RootCmd.PersistentFlags().Lookup("cc").DefValue = ""
+	RootCmd.PersistentFlags().Lookup("bcc").DefValue = ""
+	RootCmd.PersistentFlags().Lookup("attachment").DefValue = ""
 
 	RootCmd.PersistentFlags().StringP("smtp-server", "x", "localhost",
 		"The SMTP server to send email through")
