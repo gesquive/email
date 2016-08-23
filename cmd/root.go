@@ -49,7 +49,6 @@ func init() {
 	RootCmd.PersistentFlags().BoolVarP(&showVersion, "version", "v", false,
 		"Show the version and exit")
 
-	// TODO: Add html support
 	RootCmd.PersistentFlags().BoolP("strict-parsing", "e", false,
 		"Fail to send the email when any email address is malformed")
 	RootCmd.PersistentFlags().StringSliceP("to", "t", nil,
@@ -66,7 +65,9 @@ func init() {
 	RootCmd.PersistentFlags().StringP("subject", "s", "",
 		"Subject of email")
 	RootCmd.PersistentFlags().StringP("message", "m", "",
-		"Content of email")
+		"Plain text content of email")
+	RootCmd.PersistentFlags().StringP("html-message", "H", "",
+		"Alternate HTML content of email")
 	RootCmd.PersistentFlags().StringSliceP("attachment", "a", nil,
 		"File to attach to email")
 
@@ -84,11 +85,12 @@ func init() {
 	viper.BindEnv("strict_parsing")
 	viper.BindEnv("to")
 	viper.BindEnv("from")
-	viper.BindEnv("reply-to")
+	viper.BindEnv("reply_to")
 	viper.BindEnv("cc")
 	viper.BindEnv("bcc")
 	viper.BindEnv("subject")
 	viper.BindEnv("message")
+	viper.BindEnv("html_message")
 	viper.BindEnv("attachment")
 	viper.BindEnv("smtp_server")
 	viper.BindEnv("smtp_port")
@@ -103,6 +105,7 @@ func init() {
 	viper.BindPFlag("email.bcc", RootCmd.PersistentFlags().Lookup("bcc"))
 	viper.BindPFlag("email.subject", RootCmd.PersistentFlags().Lookup("subject"))
 	viper.BindPFlag("email.message", RootCmd.PersistentFlags().Lookup("message"))
+	viper.BindPFlag("email.html", RootCmd.PersistentFlags().Lookup("html-message"))
 	viper.BindPFlag("email.attachments", RootCmd.PersistentFlags().Lookup("attachment"))
 	viper.BindPFlag("smtp.server", RootCmd.PersistentFlags().Lookup("smtp-server"))
 	viper.BindPFlag("smtp.port", RootCmd.PersistentFlags().Lookup("smtp-port"))
@@ -223,6 +226,14 @@ func sendMessage(message string) {
 	}
 	msg.SetHeader("Subject", viper.GetString("email.subject"))
 	msg.SetBody("text/plain", message)
+	htmlMessage := viper.GetString("email.html")
+	if len(htmlMessage) > 0 {
+		if len(message) == 0 {
+			msg.SetBody("text/html", htmlMessage)
+		} else {
+			msg.AddAlternative("text/html", htmlMessage)
+		}
+	}
 	attachments := viper.GetStringSlice("email.attachments")
 	if len(attachments) > 0 {
 		for _, a := range attachments {
@@ -230,6 +241,7 @@ func sendMessage(message string) {
 		}
 	}
 
+	//TODO: Add an option for tls/ssl connections
 	smtpHost := viper.GetString("smtp.server")
 	smtpPort := viper.GetInt("smtp.port")
 	username := viper.GetString("smtp.username")
