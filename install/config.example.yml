@@ -1,0 +1,19 @@
+email:
+    from: sombody@domain.com
+    reply-to: sombody@domain.com
+    to: somebody.else@domain.com
+    cc: a.friend@domain.com
+    bcc:
+      - a.secret.friend@domain.com
+      - secret@evil.com
+    subject: "Awesome!"
+    attachments:
+      - /path/to/attachment1
+      - /path/to/attachment2
+smtp:
+    server: localhost
+    port: 25
+    username: "sombody"
+    password: "thisisarealpassword"
+
+strict-parsing: false
