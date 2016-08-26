@@ -43,6 +43,7 @@ func Execute(version string) {
 func init() {
 	cobra.OnInitialize(initConfig)
 
+	//TODO: Look into seperating out sections in usage printout
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "",
 		"config file (default is $HOME/.config/email.yml)")
 	RootCmd.PersistentFlags().BoolVarP(&logDebug, "debug", "D", false,
@@ -61,7 +62,7 @@ func init() {
 	RootCmd.PersistentFlags().StringP("reply-to", "r", "",
 		"Reply to address")
 	RootCmd.PersistentFlags().StringSliceP("cc", "c", nil,
-		"Carbon copy adresses (multi)")
+		"Carbon copy addresses (multi)")
 	RootCmd.PersistentFlags().StringSliceP("bcc", "b", nil,
 		"Blind carbon copy addresses (multi)")
 	RootCmd.PersistentFlags().StringP("subject", "s", "",
@@ -146,6 +147,7 @@ func initConfig() {
 }
 
 func run(cmd *cobra.Command, args []string) {
+
 	if logDebug {
 		cli.SetLogLevel(cli.LevelDebug)
 	}
