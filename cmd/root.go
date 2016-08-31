@@ -6,6 +6,8 @@ import (
 	"net/mail"
 	"os"
 	"os/user"
+	"strings"
+	"time"
 
 	cli "github.com/gesquive/cli-log"
 	"github.com/spf13/cobra"
@@ -193,61 +195,91 @@ func getPipedInput() string {
 
 func sendMessage(message string) {
 	strict := viper.GetBool("strict-parsing")
+	if strict {
+		cli.Debug("Composing message with strict address parsing")
+	} else {
+		cli.Debug("Composing message")
+	}
 	msg := gomail.NewMessage()
+	cli.Debug("Date: %s", time.Now().Format(time.RFC1123Z))
+
 	fromAddress := viper.GetString("email.from")
 	if len(fromAddress) == 0 {
 		fromAddress = getDefaultEmailAddress()
 	}
 	cli.Debug("From: %s", fromAddress)
 	msg.SetHeader("From", fromAddress)
+
 	replyAddress, err := formatEmail(viper.GetString("email.reply-to"))
 	if strict && err != nil {
 		cli.Warn("%v", err)
 		cli.Error("Will not send email")
 		return
 	} else if len(replyAddress) > 0 {
-		cli.Debug("Setting reply-to: %s", replyAddress)
+		cli.Debug("Reply-To: %s", replyAddress)
 		msg.SetHeader("Reply-To", replyAddress)
 	}
-	toAddresses, err := formatEmailList(viper.GetStringSlice("email.to"), strict)
+
+	toAddresses, err := formatEmailList(getFixedStringSlice("email.to"), strict)
 	if strict && err != nil {
 		cli.Warn("%v", err)
 		cli.Error("Will not send email")
 		return
 	} else if len(toAddresses) > 0 {
-		cli.Debug("Adding cc: %v", toAddresses)
+		cli.Debug("To: %s", formatStringSlice(toAddresses))
 		msg.SetHeader("To", toAddresses...)
 	}
-	ccAddresses, err := formatEmailList(viper.GetStringSlice("email.cc"), strict)
+
+	ccAddresses, err := formatEmailList(getFixedStringSlice("email.cc"), strict)
 	if strict && err != nil {
 		cli.Warn("%v", err)
 		cli.Error("Will not send email")
 		return
 	} else if len(ccAddresses) > 0 {
-		cli.Debug("Adding cc: %v", ccAddresses)
+		cli.Debug("Cc: %s", formatStringSlice(ccAddresses))
 		msg.SetHeader("Cc", ccAddresses...)
 	}
-	bccAddresses, err := formatEmailList(viper.GetStringSlice("email.bcc"), strict)
+
+	bccAddresses, err := formatEmailList(getFixedStringSlice("email.bcc"), strict)
 	if strict && err != nil {
 		cli.Warn("%v", err)
 		cli.Error("Will not send email")
 		return
 	} else if len(bccAddresses) > 0 {
-		cli.Debug("Adding bcc: %v", bccAddresses)
+		cli.Debug("Bcc: %s", formatStringSlice(bccAddresses))
 		msg.SetHeader("Bcc", bccAddresses...)
 	}
-	msg.SetHeader("Subject", viper.GetString("email.subject"))
-	msg.SetBody("text/plain", message)
+
+	subject := viper.GetString("email.subject")
+	cli.Debug("Subject: %s", subject)
+	msg.SetHeader("Subject", subject)
+
 	htmlMessage := viper.GetString("email.html")
-	if len(htmlMessage) > 0 {
-		if len(message) == 0 {
-			msg.SetBody("text/html", htmlMessage)
-		} else {
-			msg.AddAlternative("text/html", htmlMessage)
-		}
+	haveMessage := len(message) > 0
+	haveHTML := len(htmlMessage) > 0
+	if haveMessage && haveHTML {
+		cli.Debug("Content-Type: text/plain")
+		cli.Debug("Message: %s", message)
+		msg.SetBody("text/plain", message)
+		cli.Debug("Content-Type: text/html")
+		cli.Debug("Message: %s", htmlMessage)
+		msg.AddAlternative("text/html", htmlMessage)
+	} else if haveMessage {
+		cli.Debug("Content-Type: text/plain")
+		cli.Debug("Message: %s", message)
+		msg.SetBody("text/plain", message)
+	} else if haveHTML {
+		cli.Debug("Content-Type: text/html")
+		cli.Debug("Message: %s", htmlMessage)
+		msg.SetBody("text/html", htmlMessage)
+	} else {
+		cli.Info("There is no message to send")
+		return
 	}
-	attachments := viper.GetStringSlice("email.attachments")
+
+	attachments := getFixedStringSlice("email.attachments")
 	if len(attachments) > 0 {
+		cli.Debug("Attachments: %s", formatStringSlice(attachments))
 		for _, a := range attachments {
 			msg.Attach(a)
 		}
@@ -271,7 +303,20 @@ func sendMessage(message string) {
 		cli.Error("An error occurred when sending email")
 		cli.Fatalln(err)
 	}
-	msg.WriteTo(os.Stdout)
+}
+
+func getFixedStringSlice(key string) []string {
+	// This is only here becaues of
+	//	https://github.com/spf13/viper/issues/200
+	arr := viper.GetStringSlice(key)
+	if len(arr) == 1 && arr[0] == "[]" {
+		return []string{}
+	}
+	return arr
+}
+
+func formatStringSlice(slice []string) string {
+	return strings.Join(slice, ", ")
 }
 
 func formatEmailList(list []string, strictParsing bool) ([]string, error) {
