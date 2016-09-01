@@ -3,9 +3,8 @@ package main
 import "os"
 import "fmt"
 import "path/filepath"
-import "github.com/gesquive/email/cmd"
 
-var version = "v0.1.0"
+var version = "v0.5.0"
 var dirty = ""
 
 func main() {
@@ -13,5 +12,5 @@ func main() {
 		filepath.Base(os.Args[0]),
 		version,
 		dirty)
-	cmd.Execute(displayVersion)
+	Execute(displayVersion)
 }

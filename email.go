@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"bufio"
@@ -303,6 +303,7 @@ func sendMessage(message string) {
 		cli.Error("An error occurred when sending email")
 		cli.Fatalln(err)
 	}
+	cli.Info("Mail sent successfully")
 }
 
 func getFixedStringSlice(key string) []string {
