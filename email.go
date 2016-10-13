@@ -36,6 +36,8 @@ If a flag is tagged with 'multi', multiple versions of the flag are accepted`,
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute(version string) {
 	displayVersion = version
+	RootCmd.SetHelpTemplate(fmt.Sprintf("%s\nVersion:\n  github.com/gesquive/%s\n",
+		RootCmd.HelpTemplate(), displayVersion))
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
