@@ -38,46 +38,45 @@ FIND_DIST:=find * -type d -exec
 
 default: build
 
+.PHONY: help
 help:
-	@echo 'Management commands for email:'
-	@echo
-	@echo 'Usage:'
-	@echo '    make build    Compile the project'
-	@echo '    make link     Symlink this project into the GOPATH'
-	@echo '    make test     Run tests on a compiled project'
-	@echo '    make install  Install binary'
-	@echo '    make depends  Download dependencies'
-	@echo '    make fmt      Reformat the source tree with gofmt'
-	@echo '    make clean    Clean the directory tree'
-	@echo '    make dist     Cross compile the full distribution'
+	@echo 'Management commands for ${PROJECT_NAME}:'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
+	 awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2}'
 	@echo
 
-build:
+.PHONY: build
+build: ## Compile the project
 	@echo "building ${OWNER} ${BIN_NAME} ${VERSION}"
 	@echo "GOPATH=${GOPATH}"
 	${GOCC} build -ldflags "-X main.version=${VERSION} -X main.dirty=${GIT_DIRTY}" -o ${BIN_NAME}
 
-install: build
+.PHONY: install
+install: build ## Install the binaries on this computer
 	install -d ${DESTDIR}/usr/local/bin/
 	install -m 755 ./${BIN_NAME} ${DESTDIR}/usr/local/bin/${BIN_NAME}
-	install -m 644 ./man/*.1 ${DESTDIR}/usr/local/share/man/man1/
 
-depends:
+.PHONY: depends
+depends: ## Download project dependencies
 	${GOCC} get -u github.com/Masterminds/glide
 	glide install
 
-test:
+.PHONY: test
+test: ## Run golang tests
 	${GOCC} test ./...
 
-clean:
+.PHONY: clean
+clean: ## Clean the directory tree of artifacts
 	${GOCC} clean
 	rm -f ./${BIN_NAME}.test
 	rm -f ./${BIN_NAME}
 	rm -rf ./dist
 
+.PHONY: bootstrap-dist
 bootstrap-dist:
 	${GOCC} get -u github.com/mitchellh/gox
 
+.PHONY: build-all
 build-all: bootstrap-dist
 	gox -verbose \
 	-ldflags "-X main.version=${VERSION} -X main.dirty=${GIT_DIRTY}" \
@@ -85,7 +84,8 @@ build-all: bootstrap-dist
 	-arch="amd64 386" \
 	-output="dist/{{.OS}}-{{.Arch}}/{{.Dir}}" .
 
-dist: build-all
+.PHONY: dist
+dist: build-all ## Cross compile the full distribution
 	cd dist && \
 	$(FIND_DIST) cp ../LICENSE {} \; && \
 	$(FIND_DIST) cp ../README.md {} \; && \
@@ -93,15 +93,13 @@ dist: build-all
 	$(FIND_DIST) zip -r ${PROJECT_NAME}-${VERSION}-{}.zip {} \; && \
 	cd ..
 
-fmt:
+.PHONY: fmt
+fmt: ## Reformat the source tree with gofmt
 	find . -name '*.go' -not -path './.vendor/*' -exec gofmt -w=true {} ';'
 
-link:
-	# relink into the go path
+.PHONY: link
+link: ## Symlink this source tree into the GOPATH
 	if [ ! $(INSTALL_PATH) -ef . ]; then \
 		mkdir -p `dirname $(INSTALL_PATH)`; \
 		ln -s $(PWD) $(INSTALL_PATH); \
 	fi
-
-
-.PHONY: build help test install depends clean bootstrap-dist build-all dist docs fmt link
