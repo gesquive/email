@@ -1,0 +1,6 @@
+package: github.com/gesquive/email
+import:
+- package: github.com/gesquive/cli-log
+- package: github.com/spf13/cobra
+- package: github.com/spf13/viper
+- package: gopkg.in/gomail.v2

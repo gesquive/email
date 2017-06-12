@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	cli "github.com/gesquive/cli-log"
+	"github.com/gesquive/cli"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/gomail.v2"
@@ -153,7 +153,7 @@ func initConfig() {
 func run(cmd *cobra.Command, args []string) {
 
 	if logDebug {
-		cli.SetLogLevel(cli.LevelDebug)
+		cli.SetPrintLevel(cli.LevelDebug)
 	}
 	if showVersion {
 		cli.Info(displayVersion)
